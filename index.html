@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>货仓配货计算器 v5-5</title>
+    <style>
+        :root { --primary: #2563eb; --green: #10b981; --red: #ef4444; --bg: #f8fafc; }
+        * { -webkit-box-sizing: border-box; box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg); padding: 16px;
+            display: -webkit-flex; display: flex;
+            -webkit-flex-direction: column; flex-direction: column;
+            -webkit-align-items: center; align-items: center;
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type="number"] { -moz-appearance: textfield; }
+
+        /* ── CARDS ── */
+        #app-container {
+            display: -webkit-flex; display: flex;
+            -webkit-flex-wrap: wrap; flex-wrap: wrap;
+            gap: 16px; -webkit-justify-content: center; justify-content: center;
+            width: 100%; max-width: 1200px; margin-bottom: 16px;
+        }
+        .card {
+            background: white; padding: 20px; border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            width: 100%; max-width: 380px;
+        }
+        .card-header {
+            display: -webkit-flex; display: flex;
+            -webkit-justify-content: space-between; justify-content: space-between;
+            -webkit-align-items: center; align-items: center;
+            border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 15px; gap: 8px;
+        }
+        .title-wrapper {
+            display: -webkit-flex; display: flex;
+            -webkit-align-items: center; align-items: center;
+            -webkit-flex-grow: 1; flex-grow: 1; gap: 6px;
+        }
+        .animal-select {
+            font-size: 16px; padding: 8px; border: 1px solid #cbd5e1;
+            border-radius: 8px; background: #f1f5f9;
+            -webkit-appearance: none; appearance: none; outline: none;
+        }
+        .cut-input {
+            font-size: 16px; font-weight: 600; color: #1e293b;
+            border: 1px dashed #cbd5e1; border-radius: 6px; padding: 8px 10px;
+            -webkit-flex-grow: 1; flex-grow: 1; width: 50px;
+            -webkit-appearance: none; appearance: none; outline: none;
+        }
+        .cut-input:focus { border-color: var(--primary); background: #eff6ff; }
+        .cut-input::-webkit-input-placeholder { color: #94a3b8; font-weight: normal; }
+
+        /* segmented */
+        .segmented-control {
+            display: -webkit-flex; display: flex;
+            background: #e2e8f0; border-radius: 8px; padding: 4px; margin-bottom: 18px; gap: 4px;
+        }
+        .seg-btn {
+            -webkit-flex: 1; flex: 1; text-align: center; padding: 9px 6px;
+            font-size: 13px; cursor: pointer; color: #64748b; border-radius: 6px;
+            font-weight: 600; border: none; background: transparent;
+            -webkit-transition: all 0.2s; transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent; line-height: 1.3;
+        }
+        .seg-btn.active { background: white; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+
+        .input-group { margin-bottom: 16px; }
+        .input-group label { display: block; font-size: 14px; color: #64748b; margin-bottom: 4px; }
+        .input-group input {
+            width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px;
+            font-size: 16px; -webkit-appearance: none; appearance: none; outline: none; color: #1e293b;
+        }
+
+        /* tail position — on each card */
+        .tail-row {
+            display: -webkit-flex; display: flex;
+            gap: 8px; margin-bottom: 16px;
+        }
+        .tail-card-btn {
+            -webkit-flex: 1; flex: 1; padding: 9px 6px; border-radius: 8px; font-size: 12px;
+            font-weight: 600; cursor: pointer; border: 1.5px solid #e2e8f0;
+            background: white; color: #64748b; -webkit-tap-highlight-color: transparent;
+            -webkit-transition: all 0.2s; transition: all 0.2s; line-height: 1.3; text-align: center;
+        }
+        .tail-card-btn.active { border-color: var(--primary); background: #eff6ff; color: var(--primary); }
+        .tail-card-label { font-size: 13px; color: #64748b; margin-bottom: 6px; font-weight: 600; }
+
+        button.calc-btn {
+            width: 100%; background: var(--primary); color: white; border: none;
+            padding: 14px; border-radius: 6px; font-size: 16px; font-weight: 600;
+            cursor: pointer; -webkit-tap-highlight-color: transparent;
+        }
+        button.calc-btn:active { background: #1d4ed8; }
+
+        .delete-btn {
+            padding: 7px 12px; background: white; color: var(--red);
+            border: 1px solid var(--red); font-size: 12px; border-radius: 4px;
+            white-space: nowrap; -webkit-flex-shrink: 0; flex-shrink: 0;
+            cursor: pointer; -webkit-tap-highlight-color: transparent;
+        }
+        .delete-btn:active { background: #fee2e2; }
+
+        .add-global-btn {
+            max-width: 380px; width: 100%; padding: 14px; border: none;
+            border-radius: 6px; font-size: 16px; font-weight: 600; color: white;
+            cursor: pointer; background: var(--green); margin-bottom: 24px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .add-global-btn:active { background: #059669; }
+
+        .result-container {
+            margin-top: 20px; padding: 16px; border-radius: 8px;
+            display: none; background: #f8fafc; border: 1px solid #e2e8f0;
+        }
+        .res-item {
+            display: -webkit-flex; display: flex;
+            -webkit-justify-content: space-between; justify-content: space-between;
+            margin-bottom: 8px; font-size: 15px;
+        }
+        .highlight { font-weight: bold; color: var(--primary); font-size: 1.1em; }
+        .info-box { background: #eff6ff; border-left: 4px solid var(--primary); padding: 12px; margin-top: 15px; font-size: 14px; color: #1e40af; }
+
+        /* ── SUMMARY ── */
+        #summary-wrapper {
+            max-width: 1200px; width: 100%; display: none; background: white;
+            padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border-top: 4px solid var(--green);
+        }
+        .summary-title { color: #1e293b; font-size: 1.3rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 15px; }
+        .summary-total-banner {
+            background: #1e293b; color: white; padding: 15px; border-radius: 8px;
+            font-size: 1rem; margin-bottom: 20px;
+            display: -webkit-flex; display: flex;
+            -webkit-justify-content: space-around; justify-content: space-around;
+            -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 10px;
+        }
+        .log-item { border-bottom: 1px solid #f1f5f9; padding: 12px 0; }
+        .log-item:last-child { border-bottom: none; }
+        .log-header { font-size: 1rem; font-weight: 600; color: #0f172a; display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; -webkit-align-items: center; align-items: center; gap: 6px; margin-bottom: 6px; }
+        .log-mode-tag { font-size: 0.8rem; background: #e2e8f0; color: #475569; padding: 2px 6px; border-radius: 4px; font-weight: normal; }
+        .log-details { color: #475569; font-size: 0.95rem; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px dashed #cbd5e1; }
+        .log-warning { color: #d97706; font-size: 0.9rem; margin-top: 4px; }
+
+        /* Generate all tally button in summary */
+        #gen-tally-all-btn {
+            width: 100%; margin-top: 16px; padding: 14px; border: 2px solid var(--green);
+            border-radius: 8px; background: white; color: var(--green);
+            font-size: 15px; font-weight: 700; cursor: pointer;
+            -webkit-tap-highlight-color: transparent; display: none;
+        }
+        #gen-tally-all-btn:active { background: #ecfdf5; }
+
+        /* ── MODAL ── */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.55); z-index: 1000;
+            display: -webkit-flex; display: flex;
+            -webkit-align-items: center; align-items: center;
+            -webkit-justify-content: center; justify-content: center;
+            padding: 20px;
+        }
+        .modal-box {
+            background: white; border-radius: 16px; padding: 24px;
+            width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto;
+        }
+        .modal-title { font-size: 1.15rem; font-weight: 700; color: #0f172a; margin-bottom: 18px; }
+        .modal-input-group { margin-bottom: 14px; }
+        .modal-input-group label { display: block; font-size: 13px; color: #64748b; margin-bottom: 5px; font-weight: 600; }
+        .modal-input-group input {
+            width: 100%; padding: 11px 12px; border: 1px solid #cbd5e1; border-radius: 8px;
+            font-size: 16px; color: #1e293b; -webkit-appearance: none; appearance: none; outline: none;
+        }
+        .modal-input-group input:focus { border-color: var(--primary); }
+        .modal-btns { display: -webkit-flex; display: flex; gap: 10px; margin-top: 20px; }
+        .modal-cancel {
+            -webkit-flex: 1; flex: 1; padding: 13px; border: 1px solid #e2e8f0;
+            border-radius: 8px; background: white; color: #64748b; font-size: 15px;
+            font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent;
+        }
+        .modal-confirm {
+            -webkit-flex: 2; flex: 2; padding: 13px; border: none;
+            border-radius: 8px; background: var(--green); color: white; font-size: 15px;
+            font-weight: 700; cursor: pointer; -webkit-tap-highlight-color: transparent;
+        }
+        .modal-confirm:active { background: #059669; }
+        .modal-hint { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+
+        /* ── PRINT ── */
+        @media print {
+            body > * { display: none !important; }
+            #print-area { display: block !important; }
+        }
+        #print-area { display: none; }
+        #print-btn-area {
+            display: none; text-align: center; margin: 20px auto; max-width: 440px; width: 100%;
+        }
+        #print-btn-area button {
+            padding: 13px 28px; background: #1e293b; color: white; border: none;
+            border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; margin: 5px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #print-btn-area .close-print-btn { background: white; color: #64748b; border: 1px solid #e2e8f0; }
+
+        /* Settings panel */
+        #pdf-settings {
+            background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+            padding: 14px 16px; margin-top: 12px; text-align: left;
+        }
+        .ps-title { font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 12px; }
+        .ps-row { margin-bottom: 10px; }
+        .ps-row label { display: block; font-size: 12px; color: #64748b; margin-bottom: 4px; font-weight: 600; }
+        .ps-row input[type="range"] {
+            width: 100%; height: 4px; -webkit-appearance: none; appearance: none;
+            background: #e2e8f0; border-radius: 4px; outline: none;
+        }
+        .ps-row input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 18px; height: 18px;
+            border-radius: 50%; background: var(--primary); cursor: pointer;
+        }
+
+        .tally-page {
+            font-family: Arial, Helvetica, sans-serif;
+            padding: 14mm 12mm;
+            max-width: 210mm;
+            margin: 0 auto;
+        }
+        .tally-header-section { margin-bottom: 5mm; }
+        .h-row {
+            display: -webkit-flex; display: flex;
+            gap: 6mm; margin-bottom: 3mm; -webkit-align-items: baseline; align-items: baseline;
+        }
+        .h-label { font-size: 9.5pt; font-weight: bold; white-space: nowrap; }
+        .h-value {
+            font-size: 9.5pt; border-bottom: 1px solid #000;
+            -webkit-flex-grow: 1; flex-grow: 1; min-width: 35mm; padding-bottom: 1mm;
+        }
+        .h-date { font-size: 9.5pt; font-weight: bold; white-space: nowrap; }
+        .tally-title-row {
+            display: -webkit-flex; display: flex;
+            -webkit-justify-content: space-between; justify-content: space-between;
+            -webkit-align-items: baseline; align-items: baseline;
+        }
+        .tally-table { width: 100%; border-collapse: collapse; font-size: 8.5pt; margin-top: 4mm; }
+        .tally-table th {
+            border: 1px solid #000; padding: 1.8mm 1.5mm; text-align: center;
+            font-weight: bold; font-size: 8pt; background: #f0f0f0;
+        }
+        .tally-table td {
+            border: 1px solid #000; padding: 1.6mm 1.5mm; text-align: center;
+            font-size: 8.5pt; height: 6.8mm;
+        }
+        .tally-table td.loc { text-align: left; }
+        /* Separator row between goods */
+        .tally-table tr.goods-sep td {
+            background: #1e293b; color: white; font-weight: bold;
+            font-size: 8pt; text-align: left; padding-left: 3mm; height: 7mm;
+            border-color: #1e293b;
+        }
+        /* Tail pallet highlight */
+        .tally-table td.tail-cell { background: #fffbeb; }
+    </style>
+<script>
+/* 网页沙盒会屏蔽 alert，改为页面内提示条 */
+window.alert = function(msg) {
+    var t = document.getElementById('__toast');
+    if (!t) {
+        t = document.createElement('div'); t.id = '__toast';
+        t.style.cssText = 'position:fixed;left:50%;top:18px;transform:translateX(-50%);max-width:86%;z-index:99999;background:#1e293b;color:#fff;padding:12px 18px;border-radius:10px;font-size:15px;box-shadow:0 6px 20px rgba(0,0,0,.3);text-align:center;';
+        document.body.appendChild(t);
+    }
+    t.textContent = msg; t.style.display = 'block';
+    clearTimeout(window.__toastTimer);
+    window.__toastTimer = setTimeout(function(){ t.style.display = 'none'; }, 2800);
+};
+</script>
+</head>
+<body>
+
+<div id="app-container"></div>
+<button class="add-global-btn" onclick="addCalculator()">➕ 添加新货物排板</button>
+
+<div id="summary-wrapper">
+    <h2 class="summary-title">📋 批次排板总览日志</h2>
+    <div id="summary-content"></div>
+    <button id="gen-tally-all-btn" onclick="openTallyModal()">🖨️ 生成整柜 Tally Sheet</button>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="tally-modal" style="display:none;" onclick="closeModalOnOverlay(event)">
+    <div class="modal-box">
+        <div class="modal-title">🖨️ 生成整柜 Tally Sheet</div>
+
+        <div class="modal-input-group">
+            <label>Container No.</label>
+            <input type="text" id="m-container" placeholder="例如: TGHU 9955512" autocomplete="off">
+        </div>
+        <div class="modal-input-group">
+            <label>Date</label>
+            <input type="text" id="m-date" placeholder="例如: 01/04/2026" autocomplete="off">
+        </div>
+        <div class="modal-input-group">
+            <label>Description of Goods <span style="font-weight:400;color:#94a3b8;">（自动合并，可修改）</span></label>
+            <input type="text" id="m-desc" placeholder="自动生成..." autocomplete="off">
+        </div>
+        <div class="modal-input-group">
+            <label>Date of Expiry</label>
+            <input type="text" id="m-expiry" placeholder="例如: Jan 2028" autocomplete="off">
+        </div>
+
+        <div class="modal-btns">
+            <button class="modal-cancel" onclick="closeModal()">取消</button>
+            <button class="modal-confirm" onclick="generateTallySheet()">生成打印表</button>
+        </div>
+    </div>
+</div>
+
+<!-- Print area -->
+<div id="print-btn-area">
+    <button onclick="downloadPDF()">⬇️ 下载 PDF</button>
+    <button class="close-print-btn" onclick="closePrintPreview()">✕ 关闭预览</button>
+    <!-- Settings panel -->
+    <div id="pdf-settings">
+        <div class="ps-title">⚙️ 打印设置</div>
+        <div class="ps-row">
+            <label>字体大小 <span id="lbl-font">14</span>pt</label>
+            <input type="range" id="cfg-font" min="7" max="16" value="14" step="0.5" oninput="document.getElementById('lbl-font').innerText=this.value">
+        </div>
+        <div class="ps-row">
+            <label>行高 <span id="lbl-row">11</span>mm</label>
+            <input type="range" id="cfg-row" min="6" max="20" value="11" step="0.5" oninput="document.getElementById('lbl-row').innerText=this.value">
+        </div>
+        <div class="ps-row">
+            <label>表头字体 <span id="lbl-hfont">10</span>pt</label>
+            <input type="range" id="cfg-hfont" min="6" max="14" value="10" step="0.5" oninput="document.getElementById('lbl-hfont').innerText=this.value">
+        </div>
+        <div class="ps-row">
+            <label>左右边距 <span id="lbl-margin">10</span>mm</label>
+            <input type="range" id="cfg-margin" min="6" max="25" value="10" step="1" oninput="document.getElementById('lbl-margin').innerText=this.value">
+        </div>
+        <div class="ps-row">
+            <label>空白行数 <span id="lbl-blank">3</span>行</label>
+            <input type="range" id="cfg-blank" min="0" max="10" value="3" step="1" oninput="document.getElementById('lbl-blank').innerText=this.value">
+        </div>
+    </div>
+</div>
+<div id="print-area"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+var calculatorCount = 0;
+
+window.onload = function() {
+    addCalculator();
+    var today = new Date();
+    var dd = String(today.getDate()).padStart(2,'0');
+    var mm = String(today.getMonth()+1).padStart(2,'0');
+    var yyyy = today.getFullYear();
+    document.getElementById('m-date').value = dd + '/' + mm + '/' + yyyy;
+};
+
+/* ── 功能开关：均分排板(mode1)已隐藏，改为 true 即可恢复 ── */
+var ENABLE_MODE1 = false;
+
+/* ── MODE SWITCH ── */
+function switchMode(btn, cardId) {
+    var card = document.getElementById(cardId);
+    var sel = btn.dataset.mode;
+    card.querySelectorAll('.seg-btn').forEach(function(b) { b.classList.toggle('active', b.dataset.mode === sel); });
+    card.dataset.currentMode = sel;
+    card.querySelector('.mode1-inputs').style.display = sel === 'mode1' ? 'block' : 'none';
+    card.querySelector('.mode2-inputs').style.display = sel === 'mode1' ? 'none' : 'block';
+    card.querySelector('.result-container').style.display = 'none';
+    updateGlobalSummary();
+}
+
+/* ── TAIL POSITION (per card) ── */
+function selectTailCardPos(btn, cardId, pos) {
+    var card = document.getElementById(cardId);
+    card.dataset.tailPos = pos;
+    card.querySelectorAll('.tail-card-btn').forEach(function(b) { b.classList.toggle('active', b.dataset.tpos === pos); });
+}
+
+/* ── ADD CARD ── */
+function addCalculator() {
+    calculatorCount++;
+    var container = document.getElementById('app-container');
+    var id = 'calc-' + calculatorCount;
+    var n = calculatorCount;
+    var html =
+        '<div class="card calc-instance" id="' + id + '" data-current-mode="' + (ENABLE_MODE1 ? 'mode1' : 'mode2') + '" data-tail-pos="last">' +
+            '<div class="card-header">' +
+                '<div class="title-wrapper">' +
+                    '<select class="animal-select" onchange="updateGlobalSummary()">' +
+                        '<option value="🐖">🐖 猪肉</option>' +
+                        '<option value="🐄">🐄 牛肉</option>' +
+                        '<option value="🐔">🐔 鸡肉</option>' +
+                        '<option value="🐑">🐑 羊肉</option>' +
+                        '<option value="📦">📦 其他</option>' +
+                    '</select>' +
+                    '<input type="text" class="cut-input" placeholder="输入品名/部位" oninput="updateGlobalSummary()">' +
+                '</div>' +
+                (n > 1 ? '<button class="delete-btn" onclick="removeCalculator(this)">删除</button>' : '') +
+            '</div>' +
+            '<div class="segmented-control"' + (ENABLE_MODE1 ? '' : ' style="display:none;"') + '>' +
+                '<button class="seg-btn active" data-mode="mode1" onclick="switchMode(this,\'' + id + '\')">均分排板<br>(已知板数)</button>' +
+                '<button class="seg-btn" data-mode="mode2" onclick="switchMode(this,\'' + id + '\')">满载排板<br>(算板数)</button>' +
+            '</div>' +
+            '<div class="input-group">' +
+                '<label>总箱数 (Total CTN)</label>' +
+                '<input type="number" class="totalBoxes" placeholder="例如: 1436" inputmode="numeric" pattern="[0-9]*">' +
+            '</div>' +
+            '<div class="mode1-inputs"' + (ENABLE_MODE1 ? '' : ' style="display:none;"') + '>' +
+                '<div class="input-group"><label>总板数 (Total Pallets)</label><input type="number" class="totalPallets" placeholder="例如: 48" inputmode="numeric" pattern="[0-9]*"></div>' +
+                '<div class="input-group"><label>每层箱数 (Ti)</label><input type="number" class="ti" value="5" inputmode="numeric" pattern="[0-9]*"></div>' +
+            '</div>' +
+            '<div class="mode2-inputs"' + (ENABLE_MODE1 ? ' style="display:none;"' : '') + '>' +
+                '<div class="input-group"><label>单板满载箱数 (CTN per Pallet)</label><input type="number" class="boxesPerPallet" placeholder="例如: 30" inputmode="numeric" pattern="[0-9]*"></div>' +
+            '</div>' +
+            '<div class="tail-card-label">散货</div>' +
+            '<div class="tail-row">' +
+                '<button class="tail-card-btn" data-tpos="first" onclick="selectTailCardPos(this,\'' + id + '\',\'first\')">第一板<br>Pallet #1</button>' +
+                '<button class="tail-card-btn active" data-tpos="last" onclick="selectTailCardPos(this,\'' + id + '\',\'last\')">最后一板<br>Last Pallet</button>' +
+            '</div>' +
+            '<button class="calc-btn" onclick="calculate(this)">开始计算</button>' +
+            '<div class="result-container">' +
+                '<div class="res-item"><span class="res-label-1">方案 A:</span><span class="highResult highlight">-</span></div>' +
+                '<div class="res-item"><span class="res-label-2">方案 B:</span><span class="lowResult highlight">-</span></div>' +
+                '<div class="extraInfo info-box" style="display:none;"></div>' +
+            '</div>' +
+        '</div>';
+    container.insertAdjacentHTML('beforeend', html);
+    updateGlobalSummary();
+}
+
+function removeCalculator(btn) {
+    btn.closest('.card').remove();
+    updateGlobalSummary();
+}
+
+/* ── CALCULATE ── */
+function calculate(btn) {
+    var card = btn.closest('.card');
+    var mode = card.dataset.currentMode || 'mode1';
+    var T = parseInt(card.querySelector('.totalBoxes').value);
+    if (isNaN(T) || T <= 0) { alert("请输入有效的总箱数"); return; }
+
+    var resLabel1 = card.querySelector('.res-label-1');
+    var resLabel2 = card.querySelector('.res-label-2');
+    var highRes = card.querySelector('.highResult');
+    var lowRes = card.querySelector('.lowResult');
+    var infoBox = card.querySelector('.extraInfo');
+    infoBox.style.display = 'none';
+
+    if (mode === 'mode1') {
+        var P = parseInt(card.querySelector('.totalPallets').value);
+        var L = parseInt(card.querySelector('.ti').value);
+        if (isNaN(P) || isNaN(L) || P === 0) { alert("请输入有效的总板数和层数"); return; }
+        var avg = T / P;
+        var lowQty = Math.floor(avg / L) * L;
+        var highQty = lowQty + L;
+        var remainder = T % L;
+        var totalAdjusted = T - remainder;
+        var x = (totalAdjusted - (P * lowQty)) / L;
+        var y = P - x;
+        resLabel1.innerText = "方案 A (高位板):";
+        highRes.innerHTML = x + " 板 × " + highQty + " 箱";
+        resLabel2.innerText = "方案 B (低位板):";
+        lowRes.innerHTML = y + " 板 × " + lowQty + " 箱";
+        if (remainder > 0) {
+            infoBox.style.display = 'block';
+            infoBox.innerHTML = "⚠️ 注意：有 <b>" + remainder + "</b> 箱散货。";
+        }
+        card.dataset.calculatedPallets = P;
+        card.dataset.modeName = "均分";
+    } else {
+        var B = parseInt(card.querySelector('.boxesPerPallet').value);
+        if (isNaN(B) || B <= 0) { alert("请输入有效的单板满载箱数"); return; }
+        var fullPallets = Math.floor(T / B);
+        var rem2 = T % B;
+        resLabel1.innerText = "整板 (满载):";
+        highRes.innerHTML = fullPallets > 0 ? (fullPallets + " 板 × " + B + " 箱") : "0 板";
+        resLabel2.innerText = "尾板 (散货):";
+        lowRes.innerHTML = rem2 > 0 ? ("1 板 × " + rem2 + " 箱") : "无";
+        card.dataset.calculatedPallets = fullPallets + (rem2 > 0 ? 1 : 0);
+        card.dataset.modeName = "满载";
+    }
+
+    card.querySelector('.result-container').style.display = 'block';
+    updateGlobalSummary();
+}
+
+/* ── BUILD PALLET LIST for one card ── */
+function buildPallets(card) {
+    var mode = card.dataset.currentMode || 'mode1';
+    var tailPos = card.dataset.tailPos || 'last';
+    var T = parseInt(card.querySelector('.totalBoxes').value) || 0;
+    var pallets = [];
+
+    if (mode === 'mode2') {
+        var B = parseInt(card.querySelector('.boxesPerPallet').value) || 0;
+        if (!B) return pallets;
+        var fullP = Math.floor(T / B);
+        var remP = T % B;
+        if (remP > 0 && tailPos === 'first') {
+            pallets.push({ no: 1, qty: remP, isTail: true });
+            for (var i = 0; i < fullP; i++) pallets.push({ no: i + 2, qty: B, isTail: false });
+        } else {
+            for (var i = 0; i < fullP; i++) pallets.push({ no: i + 1, qty: B, isTail: false });
+            if (remP > 0) pallets.push({ no: fullP + 1, qty: remP, isTail: true });
+        }
+    } else {
+        var P = parseInt(card.querySelector('.totalPallets').value) || 0;
+        var L = parseInt(card.querySelector('.ti').value) || 1;
+        if (!P) return pallets;
+        var avg = T / P;
+        var lowQty = Math.floor(avg / L) * L;
+        var highQty = lowQty + L;
+        var rem = T % L;
+        var totalAdj = T - rem;
+        var x = (totalAdj - (P * lowQty)) / L;
+        var qtyList = [];
+        for (var i = 0; i < x; i++) qtyList.push(highQty);
+        for (var i = 0; i < (P - x); i++) qtyList.push(lowQty);
+        if (rem > 0) {
+            if (tailPos === 'first') qtyList[0] += rem;
+            else qtyList[qtyList.length - 1] += rem;
+        }
+        for (var i = 0; i < qtyList.length; i++) pallets.push({ no: i + 1, qty: qtyList[i], isTail: false });
+    }
+    return pallets;
+}
+
+/* ── MODAL ── */
+function openTallyModal() {
+    // Auto-build description from all calculated cards
+    var cards = document.querySelectorAll('.calc-instance');
+    var emojiMap = {'🐖':'Frozen Pork','🐄':'Frozen Beef','🐔':'Frozen Chicken','🐑':'Frozen Lamb','📦':'Frozen Goods'};
+    var names = [];
+    cards.forEach(function(card) {
+        if (card.querySelector('.result-container').style.display === 'block') {
+            var emoji = card.querySelector('.animal-select').value;
+            var cut = card.querySelector('.cut-input').value.trim();
+            var base = emojiMap[emoji] || 'Frozen Goods';
+            var name = cut ? (base + ' ' + cut.charAt(0).toUpperCase() + cut.slice(1)) : base;
+            names.push(name);
+        }
+    });
+    if (names.length) document.getElementById('m-desc').value = names.join(' / ');
+    document.getElementById('tally-modal').style.display = 'flex';
+}
+function closeModal() { document.getElementById('tally-modal').style.display = 'none'; }
+function closeModalOnOverlay(e) { if (e.target === document.getElementById('tally-modal')) closeModal(); }
+
+/* ── GENERATE TALLY SHEET ── */
+function generateTallySheet() {
+    var containerNo = document.getElementById('m-container').value.trim() || '_______________';
+    var dateStr     = document.getElementById('m-date').value.trim() || '';
+    var desc        = document.getElementById('m-desc').value.trim() || '_______________';
+    var expiry      = document.getElementById('m-expiry').value.trim() || '_______________';
+
+    var cards = document.querySelectorAll('.calc-instance');
+    var emojiMap = {'🐖':'Pork','🐄':'Beef','🐔':'Chicken','🐑':'Lamb','📦':'Goods'};
+
+    // Collect all goods that have been calculated
+    var goodsList = [];
+    var totalCtns = 0;
+    cards.forEach(function(card, idx) {
+        if (card.querySelector('.result-container').style.display !== 'block') return;
+        var emoji = card.querySelector('.animal-select').value;
+        var cut = card.querySelector('.cut-input').value.trim() || ('Item #' + (idx + 1));
+        var base = emojiMap[emoji] || 'Goods';
+        var goodsName = (base + ' ' + cut).toUpperCase();
+        var T = parseInt(card.querySelector('.totalBoxes').value) || 0;
+        var pallets = buildPallets(card);
+        totalCtns += T;
+        goodsList.push({ name: goodsName, pallets: pallets, total: T });
+    });
+
+    if (!goodsList.length) { alert("请先完成计算再生成表格"); return; }
+
+    var multiGoods = goodsList.length > 1;
+
+    // Helper: escape HTML special chars for preview
+    function esc(str) {
+        return String(str)
+            .replace(/&/g,'&amp;')
+            .replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;');
+    }
+
+    // Build unified table rows
+    var allSections = '';
+    goodsList.forEach(function(goods) {
+        var pallets = goods.pallets;
+        var half = Math.ceil(pallets.length / 2);
+        var left = pallets.slice(0, half);
+        var right = pallets.slice(half);
+        var maxR = Math.max(left.length, right.length);
+
+        // Separator row only when multiple goods
+        if (multiGoods) {
+            allSections += '<tr class="goods-sep"><td colspan="8">' + esc(goods.name) + ' \u2014 ' + goods.total + ' CTN (' + pallets.length + ' pallets)</td></tr>';
+        }
+
+        for (var r = 0; r < maxR; r++) {
+            var lp = left[r];
+            var rp = right[r];
+            var lTail = lp && lp.isTail;
+            var rTail = rp && rp.isTail;
+            var lc = lp
+                ? '<td' + (lTail ? ' class="tail-cell"' : '') + '>' + lp.no + '</td>' +
+                  '<td' + (lTail ? ' class="tail-cell"' : '') + '>' + lp.qty + ' CTN</td>' +
+                  '<td></td><td class="loc"></td>'
+                : '<td></td><td></td><td></td><td></td>';
+            var rc = rp
+                ? '<td' + (rTail ? ' class="tail-cell"' : '') + '>' + rp.no + '</td>' +
+                  '<td' + (rTail ? ' class="tail-cell"' : '') + '>' + rp.qty + ' CTN</td>' +
+                  '<td></td><td class="loc"></td>'
+                : '<td></td><td></td><td></td><td></td>';
+            allSections += '<tr>' + lc + rc + '</tr>';
+        }
+    });
+
+    // Blank rows
+    for (var b = 0; b < 3; b++) {
+        allSections += '<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
+    }
+
+    var tableHtml =
+        '<table class="tally-table">' +
+        '<thead><tr>' +
+        '<th>PALLET NO:</th><th>QTY</th><th>WEIGHT</th><th>LOCATION</th>' +
+        '<th>PALLET NO:</th><th>QTY</th><th>WEIGHT</th><th>LOCATION</th>' +
+        '</tr></thead>' +
+        '<tbody>' + allSections + '</tbody>' +
+        '</table>';
+
+    var titleRight = dateStr ? '<span class="h-date">' + esc(dateStr) + '</span>' : '';
+
+    var html =
+        '<div class="tally-page">' +
+            '<div class="tally-header-section">' +
+                '<div class="h-row tally-title-row">' +
+                    '<div style="display:flex;gap:5mm;flex:1;align-items:baseline;">' +
+                        '<span class="h-label">CONTAINER NO:</span>' +
+                        '<span class="h-value">' + esc(containerNo) + '</span>' +
+                    '</div>' + titleRight +
+                '</div>' +
+                '<div class="h-row">' +
+                    '<span class="h-label">DESCRIPTION OF GOODS:</span>' +
+                    '<span class="h-value">' + esc(desc) + '</span>' +
+                '</div>' +
+                '<div class="h-row">' +
+                    '<span class="h-label">DATE OF EXPIRY:</span>' +
+                    '<span class="h-value" style="max-width:48mm;">' + esc(expiry) + '</span>' +
+                    '<span style="width:12mm;"></span>' +
+                    '<span class="h-label">TOTAL WEIGHT:</span>' +
+                    '<span class="h-value">' + totalCtns + ' CTN</span>' +
+                '</div>' +
+            '</div>' +
+            tableHtml +
+        '</div>';
+
+    closeModal();
+
+    // Store data for PDF download
+    window._tallyData = { containerNo: containerNo, dateStr: dateStr, desc: desc, expiry: expiry, totalCtns: totalCtns, goodsList: goodsList, multiGoods: multiGoods };
+
+    document.getElementById('print-area').innerHTML = html;
+    document.getElementById('print-area').style.display = 'block';
+    document.getElementById('print-btn-area').style.display = 'block';
+    setTimeout(function() {
+        document.getElementById('print-btn-area').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+}
+
+function doPrint() {
+    // Read current print settings
+    var fontSize  = parseFloat(document.getElementById('cfg-font').value);
+    var rowHeight = parseFloat(document.getElementById('cfg-row').value);
+    var hFont     = parseFloat(document.getElementById('cfg-hfont').value);
+    var margin    = parseFloat(document.getElementById('cfg-margin').value);
+    var blankRows = parseInt(document.getElementById('cfg-blank').value);
+
+    // Add blank rows to preview if needed
+    var tbody = document.querySelector('#print-area .tally-table tbody');
+    var addedRows = [];
+    if (tbody) {
+        var existing = tbody.querySelectorAll('tr.blank-print-row');
+        existing.forEach(function(r){ r.remove(); });
+        for (var b = 0; b < blankRows; b++) {
+            var tr = document.createElement('tr');
+            tr.className = 'blank-print-row';
+            tr.innerHTML = '<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>';
+            tbody.appendChild(tr);
+            addedRows.push(tr);
+        }
+    }
+
+    // Inject dynamic print styles
+    var styleId = '__print_override__';
+    var old = document.getElementById(styleId);
+    if (old) old.remove();
+    var style = document.createElement('style');
+    style.id = styleId;
+    style.innerHTML =
+        '.tally-page { padding: ' + margin + 'mm ' + margin + 'mm; font-size: ' + fontSize + 'pt; }' +
+        '.tally-table { font-size: ' + fontSize + 'pt; }' +
+        '.tally-table th { font-size: ' + hFont + 'pt; padding: 1.5mm; }' +
+        '.tally-table td { font-size: ' + fontSize + 'pt; height: ' + rowHeight + 'mm; padding: 0 1.5mm; }' +
+        '.h-label, .h-value, .h-date { font-size: ' + fontSize + 'pt; }';
+    document.head.appendChild(style);
+
+    window.print();
+
+    // Clean up after print dialog closes
+    setTimeout(function() {
+        var s = document.getElementById(styleId);
+        if (s) s.remove();
+        addedRows.forEach(function(r){ r.remove(); });
+    }, 1000);
+}
+function closePrintPreview() {
+    document.getElementById('print-area').style.display = 'none';
+    document.getElementById('print-btn-area').style.display = 'none';
+}
+
+/* ── PDF DOWNLOAD (jsPDF + AutoTable) ── */
+function downloadPDF() {
+    if (!window._tallyData) { alert("请先生成 Tally Sheet"); return; }
+    var d = window._tallyData;
+    var { jsPDF } = window.jspdf;
+    var doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    // Read settings
+    var fontSize   = parseFloat(document.getElementById('cfg-font').value);
+    var rowHeight  = parseFloat(document.getElementById('cfg-row').value);
+    var hFontSize  = parseFloat(document.getElementById('cfg-hfont').value);
+    var margin     = parseFloat(document.getElementById('cfg-margin').value);
+    var blankRows  = parseInt(document.getElementById('cfg-blank').value);
+
+    var pageW = 210, mL = margin, mR = margin, mT = 14;
+    var usable = pageW - mL - mR;
+    var y = mT;
+
+    // ── Header ──
+    doc.setFontSize(fontSize); doc.setFont('helvetica','bold');
+    doc.text('CONTAINER NO:', mL, y);
+    var labelW1 = doc.getTextWidth('CONTAINER NO:') + 2;
+    doc.setFont('helvetica','normal');
+    doc.text(safe(d.containerNo), mL + labelW1, y);
+    doc.setFont('helvetica','bold');
+    doc.text(safe(d.dateStr), pageW - mR - doc.getTextWidth(safe(d.dateStr)), y);
+    y += 1.5;
+    doc.setDrawColor(0); doc.setLineWidth(0.3);
+    doc.line(mL + labelW1, y, pageW - mR - doc.getTextWidth(safe(d.dateStr)) - 3, y);
+    y += fontSize * 0.6;
+
+    doc.setFont('helvetica','bold');
+    doc.text('DESCRIPTION OF GOODS:', mL, y);
+    var labelW2 = doc.getTextWidth('DESCRIPTION OF GOODS:') + 2;
+    doc.setFont('helvetica','normal');
+    doc.text(safe(d.desc), mL + labelW2, y);
+    y += 1.5;
+    doc.line(mL + labelW2, y, mL + usable, y);
+    y += fontSize * 0.6;
+
+    doc.setFont('helvetica','bold');
+    doc.text('DATE OF EXPIRY:', mL, y);
+    var labelW3 = doc.getTextWidth('DATE OF EXPIRY:') + 2;
+    doc.setFont('helvetica','normal');
+    doc.text(safe(d.expiry), mL + labelW3, y);
+    var midX = mL + labelW3 + 55;
+    doc.line(mL + labelW3, y + 1.5, midX - 5, y + 1.5);
+    doc.setFont('helvetica','bold');
+    doc.text('TOTAL WEIGHT:', midX, y);
+    var labelW4 = doc.getTextWidth('TOTAL WEIGHT:') + 2;
+    doc.setFont('helvetica','normal');
+    doc.text(d.totalCtns + ' CTN', midX + labelW4, y);
+    doc.line(midX + labelW4, y + 1.5, mL + usable, y + 1.5);
+    y += fontSize * 0.9;
+
+    var head = [['PALLET NO:', 'QTY', 'WEIGHT', 'LOCATION', 'PALLET NO:', 'QTY', 'WEIGHT', 'LOCATION']];
+    var body = [];
+
+    // Helper: convert common non-ASCII chars to ASCII equivalents for jsPDF Helvetica
+    function safe(str) {
+        return String(str)
+            .replace(/\uff08/g, '(')   // （ -> (
+            .replace(/\uff09/g, ')')   // ） -> )
+            .replace(/\uff0c/g, ',')   // ， -> ,
+            .replace(/\u2014/g, '-')   // — -> -
+            .replace(/\u2013/g, '-')   // – -> -
+            .replace(/[\u4e00-\u9fff]/g, '?')  // CJK characters -> ?
+            .replace(/[^\x20-\x7E]/g, '');     // other non-ASCII -> remove
+    }
+
+    d.goodsList.forEach(function(goods) {
+        // Separator row only for multiple goods
+        if (d.multiGoods) {
+            body.push([{ content: safe(goods.name) + '  \u2014  ' + goods.total + ' CTN  (' + goods.pallets.length + ' pallets)', colSpan: 8,
+                styles: { fillColor: [30, 41, 59], textColor: [255,255,255], fontStyle: 'bold', fontSize: 7.5, halign: 'left' } }]);
+        }
+
+        var pallets = goods.pallets;
+        var half = Math.ceil(pallets.length / 2);
+        var left = pallets.slice(0, half);
+        var right = pallets.slice(half);
+        var maxR = Math.max(left.length, right.length);
+
+        for (var r = 0; r < maxR; r++) {
+            var lp = left[r];
+            var rp = right[r];
+            var tailBg = [255, 251, 235];
+            var lStyles = lp && lp.isTail ? { fillColor: tailBg } : {};
+            var rStyles = rp && rp.isTail ? { fillColor: tailBg } : {};
+            var row = [
+                lp ? { content: String(lp.no), styles: lStyles } : '',
+                lp ? { content: lp.qty + ' CTN', styles: lStyles } : '',
+                '',
+                lp ? { content: lp.location || '', styles: { halign: 'left' } } : { content: '', styles: { halign: 'left' } },
+                rp ? { content: String(rp.no), styles: rStyles } : '',
+                rp ? { content: rp.qty + ' CTN', styles: rStyles } : '',
+                '',
+                rp ? { content: rp.location || '', styles: { halign: 'left' } } : { content: '', styles: { halign: 'left' } }
+            ];
+            body.push(row);
+        }
+    });
+
+    // 3 blank rows (configurable)
+    for (var b = 0; b < blankRows; b++) body.push(['','','','','','','','']);
+
+    // Auto-scale column widths to usable width
+    var baseW = [14, 24, 20, 28, 14, 24, 20, 28]; // total 172
+    var scale = usable / 172;
+    var colW = baseW.map(function(w){ return Math.round(w * scale * 10) / 10; });
+
+    doc.autoTable({
+        head: head,
+        body: body,
+        startY: y,
+        margin: { left: mL, right: mR },
+        tableWidth: usable,
+        columnStyles: {
+            0: { cellWidth: colW[0], halign: 'center' },
+            1: { cellWidth: colW[1], halign: 'center' },
+            2: { cellWidth: colW[2], halign: 'center' },
+            3: { cellWidth: colW[3], halign: 'left' },
+            4: { cellWidth: colW[4], halign: 'center' },
+            5: { cellWidth: colW[5], halign: 'center' },
+            6: { cellWidth: colW[6], halign: 'center' },
+            7: { cellWidth: colW[7], halign: 'left' }
+        },
+        headStyles: { fillColor: [240,240,240], textColor: [0,0,0], fontStyle: 'bold', fontSize: hFontSize, halign: 'center', lineColor: [0,0,0], lineWidth: 0.3, minCellHeight: rowHeight },
+        bodyStyles: { fontSize: fontSize, cellPadding: rowHeight * 0.2, minCellHeight: rowHeight, lineColor: [0,0,0], lineWidth: 0.25 },
+        alternateRowStyles: { fillColor: false },
+        theme: 'grid'
+    });
+
+    // filename: container no + date
+    var fname = 'TallySheet_' + (d.containerNo || 'sheet').replace(/\s+/g,'_') + '.pdf';
+    if (window.claude && typeof window.claude.use === 'function') {
+        // 在 claude.ai 网页里运行时，用它的保存功能
+        window.claude.use('downloads').then(function(dl) {
+            if (!dl) { alert('当前环境不支持保存文件'); return; }
+            return dl.save({ filename: fname, data: doc.output('arraybuffer') })
+                .then(function(){ alert('已保存 PDF'); })
+                .catch(function(e){ if (!e || e.code !== 'declined') alert('保存失败：' + ((e && e.message) || '未知错误')); });
+        });
+    } else {
+        // 普通网页（如 GitHub Pages）：直接下载
+        doc.save(fname);
+    }
+}
+
+/* ── SUMMARY ── */
+function updateGlobalSummary() {
+    var cards = document.querySelectorAll('.calc-instance');
+    var wrapper = document.getElementById('summary-wrapper');
+    var content = document.getElementById('summary-content');
+    var genBtn = document.getElementById('gen-tally-all-btn');
+    var totalBoxes = 0, totalPallets = 0, log = '', has = false;
+
+    cards.forEach(function(card, idx) {
+        if (card.querySelector('.result-container').style.display !== 'block') return;
+        has = true;
+        var emoji = card.querySelector('.animal-select').value;
+        var cut = card.querySelector('.cut-input').value.trim() || ('货物 #' + (idx + 1));
+        var T = parseInt(card.querySelector('.totalBoxes').value) || 0;
+        var P = parseInt(card.dataset.calculatedPallets) || 0;
+        var mode = card.dataset.modeName || '未知';
+        var tailPos = card.dataset.tailPos || 'last';
+        var tailLabel = tailPos === 'first' ? '散货在第一板' : '散货在最后一板';
+        var l1 = card.querySelector('.res-label-1').innerText;
+        var l2 = card.querySelector('.res-label-2').innerText;
+        var r1 = card.querySelector('.highResult').innerText;
+        var r2 = card.querySelector('.lowResult').innerText;
+        var hasExtra = card.querySelector('.extraInfo').style.display === 'block';
+        var extraTxt = hasExtra ? card.querySelector('.extraInfo').innerText : '';
+        totalBoxes += T; totalPallets += P;
+        log += '<div class="log-item">' +
+            '<div class="log-header">' +
+                '<span>' + emoji + ' ' + cut + '</span>' +
+                '<span class="log-mode-tag">' + mode + '</span>' +
+                '<span style="font-size:0.8rem;color:#94a3b8;">· ' + tailLabel + '</span>' +
+                '<span style="font-size:0.85rem;color:#64748b;font-weight:normal;">(共 ' + T + ' 箱 / ' + P + ' 板)</span>' +
+            '</div>' +
+            '<div class="log-details">' +
+                '<div>✅ ' + l1 + ' <strong>' + r1 + '</strong></div>' +
+                '<div>✅ ' + l2 + ' <strong>' + r2 + '</strong></div>' +
+                (hasExtra ? '<div class="log-warning">' + extraTxt + '</div>' : '') +
+            '</div></div>';
+    });
+
+    if (has) {
+        wrapper.style.display = 'block';
+        genBtn.style.display = 'block';
+        content.innerHTML =
+            '<div class="summary-total-banner">' +
+                '<span>📦 总箱数: <strong>' + totalBoxes + '</strong> 箱</span>' +
+                '<span>🪵 总板数: <strong>' + totalPallets + '</strong> 板</span>' +
+            '</div>' + log;
+    } else {
+        wrapper.style.display = 'none';
+        genBtn.style.display = 'none';
+    }
+}
+</script>
+</body>
+</html>
